@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     set_tesseract_path("C:/Program Files/Tesseract-OCR/tesseract.exe")
 
-    image = cv2.imread("./tmp/images/6.png")
+    image = cv2.imread("./tmp/images/99.png")
     
     # Проверяем, что изображение на белом фоне
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -56,12 +56,24 @@ if __name__ == '__main__':
     # cv2.waitKey(-1)
     # cv2.destroyAllWindows()
 
-    # set_tesseract_path("C:/Program Files/Tesseract-OCR/tesseract.exe")
-    # parse_inner_texts(image, blocks)
+    task_blocks = [b for b in blocks if b.type == 'Task']
+    parse_inner_texts(image, task_blocks)
+
+    print(task_blocks)
 
     arrows = parse_arrows(image, blocks_no_swimlines, proximity_threshold=30)
 
-    image_arrows = visualize_connections(image, arrows, blocks_no_swimlines)
+    # Отладочный вывод всех блоков
+    for idx, block in enumerate(blocks):
+        print(f"{idx}: {block.type} | bbox: {block.bbox} | swimlane: {block.swimline} | text: '{block.inner_text}'")
+    
+    # for arrow in arrows:
+    #     print(f"Arrow: {arrow.from_box} -> {arrow.to_box}")
+
+    image_arrows = visualize_connections(image, arrows, blocks)
+
+
+
     cv2.imshow("result", image_arrows)
     cv2.waitKey(-1)
     cv2.destroyAllWindows()

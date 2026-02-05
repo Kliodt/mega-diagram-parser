@@ -56,7 +56,7 @@ class DiagramParsingService:
         blocks_no_swimline = [b for b in blocks if b.type != 'Swimline']
 
         # Парсим тексты у task
-        task_blocks = [b for b in blocks if b.type == 'task']
+        task_blocks = [b for b in blocks if b.type == 'Task']
         parse_inner_texts(image, task_blocks)
         
         # Парсим стрелки/связи
