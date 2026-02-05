@@ -277,6 +277,7 @@ def traverse_and_output(graph: BpmnGraph, out: Optional[List[str]] = None) -> No
     """
     Проходит по графу в стиле постфиксного обхода (post-order / depth-first).
 
+    Стартовые ноды: тип start ИЛИ любая вершина без входящих рёбер.
     Обходит только компоненту связности, содержащую стартовые ноды.
     Если граф не связен, выводит предупреждение и продолжает по достижимой части.
 
@@ -296,10 +297,12 @@ def traverse_and_output(graph: BpmnGraph, out: Optional[List[str]] = None) -> No
         incoming[dst].add(src)
         outgoing[src].append(dst)
 
-    visited: set[int] = set()
-    for node in graph.nodes:
-        if node.node_type == "start":
-            visited.add(node.id)
+    # Стартовые ноды: тип start ИЛИ вершина без входящих рёбер (только исходящие)
+    start_ids = sorted({
+        n.id for n in graph.nodes
+        if n.node_type == "start" or len(incoming[n.id]) == 0
+    })
+    visited: set[int] = set(start_ids)
 
     main_step = [0]
 
@@ -410,8 +413,16 @@ def traverse_and_output(graph: BpmnGraph, out: Optional[List[str]] = None) -> No
                 )
                 explore_from(next_nid, step_prefix, variant_counter, nesting)
 
-    start_ids = sorted(n.id for n in graph.nodes if n.node_type == "start")
     for start_id in start_ids:
+        start_node = nodes_by_id[start_id]
+        # Ноды start и parallel не выводятся — сразу переходим к исходящим
+        if start_node.node_type not in ("start", "parallel"):
+            main_step[0] += 1
+            step_num = str(main_step[0])
+            _process_node(
+                start_id, start_node, nodes_by_id, actor_by_id,
+                incoming, outgoing, step_num, "", out,
+            )
         explore_from(start_id, "", [0], 0)
 
     unvisited = set(nodes_by_id) - visited
@@ -422,6 +433,7 @@ def traverse_and_output(graph: BpmnGraph, out: Optional[List[str]] = None) -> No
             out,
         )
         _emit("Пройдена только компонента связности, содержащая стартовые ноды.", out)
+
 
 
 def bpmn_graph_to_text(json_source: Union[str, Path, dict]) -> str:
