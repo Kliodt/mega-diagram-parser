@@ -106,28 +106,14 @@ class DiagramParsingService:
                 "name": swimlane.name if swimlane.name else f"Actor {swimlane.id}"
             })
         
-        # Создаем маппинг блоков на их индексы для nodes
-        block_to_index = {}
+        # Фильтруем блоки без Swimline
         blocks_no_swimline = [b for b in blocks if b.type != 'Swimline']
         
         # Конвертируем blocks в nodes
         nodes = []
         for idx, block in enumerate(blocks_no_swimline):
-            block_to_index[id(block)] = idx
-            
-            # Определяем node_type
+            # Определяем node_type на основе типа блока
             node_type = type_mapping.get(block.type, 'task')
-            
-            # Специальная логика для определения start/end
-            if block.type in ['Event', 'Circle']:
-                # Можно определить по количеству входящих/исходящих стрелок
-                incoming = sum(1 for arrow in arrows if arrow.to_box == blocks_no_swimline.index(block) if block in blocks_no_swimline)
-                outgoing = sum(1 for arrow in arrows if arrow.from_box == blocks_no_swimline.index(block) if block in blocks_no_swimline)
-                
-                if incoming == 0 and outgoing > 0:
-                    node_type = 'start'
-                elif incoming > 0 and outgoing == 0:
-                    node_type = 'end'
             
             node = {
                 "id": idx,

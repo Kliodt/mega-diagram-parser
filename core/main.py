@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     set_tesseract_path("C:/Program Files/Tesseract-OCR/tesseract.exe")
 
-    image = cv2.imread("./tmp/images/99.png")
+    image = cv2.imread("./tmp/images/45.png")
     
     # Проверяем, что изображение на белом фоне
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

@@ -52,13 +52,14 @@ def _extract_text(image: np.ndarray, x1: int, y1: int, x2: int, y2: int) -> str:
             return ""
 
 
-def extract_swimlane_name(image: np.ndarray, swimline_group: list) -> str:
+def extract_swimlane_name(image: np.ndarray, swimline_group: list, text_search_width: int = 200) -> str:
     """
     Извлекает название swimlane из текста в левой части, повернутого на 90 градусов.
     
     Args:
         image: Исходное изображение диаграммы
         swimline_group: Список блоков swimline в одной группе
+        text_search_width: Ширина области слева для поиска текста (в пикселях)
         
     Returns:
         Название swimlane
@@ -68,13 +69,15 @@ def extract_swimlane_name(image: np.ndarray, swimline_group: list) -> str:
     
     # Находим самый левый блок в группе
     leftmost_block = min(swimline_group, key=lambda b: b.bbox[0])
-    x1, y1, x2, y2 = leftmost_block.bbox
+    _, y1, _, y2 = leftmost_block.bbox
     
-    # Увеличиваем область для захвата текста
+    # Используем только левую часть изображения заданной ширины
+    x1 = 0
+    x2 = min(text_search_width, image.shape[1])
+    
+    # Увеличиваем область по вертикали для захвата текста
     padding = 10
-    x1 = max(0, x1 - padding)
     y1 = max(0, y1 - padding)
-    x2 = min(image.shape[1], x2 + padding)
     y2 = min(image.shape[0], y2 + padding)
     
     # Извлекаем ROI (область интереса)
