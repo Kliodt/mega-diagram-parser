@@ -6,12 +6,30 @@ from block_parser_bpmn import parse_blocks
 from text_parser import parse_inner_texts, set_tesseract_path
 from arrow_parser import DiagramArrow, parse_arrows, visualize_connections
 from swimlane_parser import process_swimlanes
+from svg_converter import convert_svg_to_image, is_svg_file
 
 if __name__ == '__main__':
 
-    set_tesseract_path("C:/Program Files/Tesseract-OCR/tesseract.exe")
+    # set_tesseract_path("C:/Program Files/Tesseract-OCR/tesseract.exe")
 
-    image = cv2.imread("./tmp/images/45.png")
+    # image_path = "./tmp/test/diagram.svg"
+    # image_path = "./tmp/test/IMG_20260205_202735_896.png"
+    # image_path = "./tmp/test/Science AI - Frame 2.jpg"
+    # image_path = "./tmp/test/Test 1.png"
+    # image_path = "./tmp/test/Test 2.png"
+    image_path = "./tmp/test/Копия_Аттракционы_Регистрация_Page_1_drawio.png"
+    
+    # Читаем файл и проверяем, является ли он SVG
+    with open(image_path, 'rb') as f:
+        file_data = f.read()
+    
+    if is_svg_file(file_data):
+        image = convert_svg_to_image(file_data)
+        if image is None:
+            print("Ошибка: не удалось конвертировать SVG. Убедитесь, что установлен cairosvg")
+            exit(1)
+    else:
+        image = cv2.imread(image_path)
     
     # Проверяем, что изображение на белом фоне
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -72,7 +90,7 @@ if __name__ == '__main__':
 
     image_arrows = visualize_connections(image, arrows, blocks)
 
-
+    image_arrows = cv2.resize(image_arrows, (image_arrows.shape[1] // 2, image_arrows.shape[0] // 2))
 
     cv2.imshow("result", image_arrows)
     cv2.waitKey(-1)

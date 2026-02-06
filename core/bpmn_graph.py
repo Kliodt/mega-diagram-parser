@@ -25,7 +25,7 @@ def _format_text(s: Optional[str]) -> str:
     return s.strip()
 
 
-NodeType = Literal["start", "task", "end", "document", "parallel", "exclusive", "recieve_message", "send_message"]
+NodeType = Literal["start", "task", "end", "document", "parallel", "exclusive", "receive_message", "send_message"]
 
 
 @dataclass
@@ -48,7 +48,7 @@ class BpmnNode:
     
     Attributes:
         id: Уникальный идентификатор ноды (целое число).
-        node_type: Тип ноды — start, task, end, document, parallel, exclusive, recieve_message, send_message.
+        node_type: Тип ноды — start, task, end, document, parallel, exclusive, receive_message, send_message.
         text: Текстовое содержимое ноды (если есть). Для задач — описание,
               для start/end — описание события.
         actor_id: Идентификатор актора (действующего лица), к которому
@@ -60,7 +60,7 @@ class BpmnNode:
     actor_id: int
 
     def __post_init__(self) -> None:
-        valid_types = ("start", "task", "end", "document", "parallel", "exclusive", "recieve_message", "send_message")
+        valid_types = ("start", "task", "end", "document", "parallel", "exclusive", "receive_message", "send_message")
         if self.node_type not in valid_types:
             raise ValueError(
                 f"node_type должен быть один из {valid_types}, получено: {self.node_type}"
@@ -123,7 +123,7 @@ def parse_bpmn_graph(source: Union[str, Path, dict]) -> BpmnGraph:
             if node_id is None:
                 raise ValueError(f"Нода #{i}: отсутствует поле 'id'")
             node_type = node_data.get("node_type")
-            valid_types = ("start", "task", "end", "document", "parallel", "exclusive", "recieve_message", "send_message")
+            valid_types = ("start", "task", "end", "document", "parallel", "exclusive", "receive_message", "send_message")
             if node_type not in valid_types:
                 raise ValueError(
                     f"Нода #{node_id}: node_type должен быть один из {valid_types}, получено: {node_type}"
@@ -227,7 +227,7 @@ def _process_node(
         if out_count >= 2:
             actor_name = _actor_name(node.actor_id)
             _emit(f"{indent}{step_num} - {actor_name} принимает решение", out)
-    elif node.node_type == "recieve_message":
+    elif node.node_type == "receive_message":
         text = _fmt(node.text, "(без текста)")
         actor_name = _actor_name(node.actor_id)
         _emit(f"{indent}{step_num} - {actor_name} получил сообщение {text}", out)

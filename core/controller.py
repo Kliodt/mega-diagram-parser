@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Body, Query
+from fastapi import FastAPI, File, Form, UploadFile, Body, Query
 from fastapi.responses import JSONResponse, PlainTextResponse, HTMLResponse
 import cv2
 import numpy as np
@@ -6,6 +6,7 @@ import numpy as np
 from text_parser import set_tesseract_path
 from service import DiagramParsingService
 from bpmn_graph import bpmn_graph_to_text
+from svg_converter import convert_svg_to_image, is_svg_file
 
 
 app = FastAPI(title="Diagram Parser API")
@@ -21,70 +22,56 @@ def _text_to_html(s: str) -> str:
 
 
 @app.post("/parse-diagram-image")
-async def parse_diagram(file: UploadFile = File(...)):
+async def parse_diagram(file: UploadFile = File(...), output: str = Form("json")):
     """
     Принимает изображение диаграммы и выполняет его парсинг.
     
     Args:
         file: Загруженное изображение диаграммы
+        output: Формат вывода ("json" или "html")
         
     Returns:
-        JSON с результатами парсинга (пока пустой)
+        JSON или HTML с результатами парсинга
     """
     # Читаем файл
     contents = await file.read()
     
-    # Конвертируем в numpy array
-    nparr = np.frombuffer(contents, np.uint8)
-    image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    
-    if image is None:
-        return JSONResponse(
-            status_code=400,
-            content={"error": "Invalid image format"}
-        )
+    # Проверяем, является ли файл SVG
+    if is_svg_file(contents):
+        # Конвертируем SVG в растровое изображение
+        image = convert_svg_to_image(contents)
+        if image is None:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Failed to convert SVG image. Make sure cairosvg is installed."}
+            )
+    else:
+        # Конвертируем обычное изображение в numpy array
+        nparr = np.frombuffer(contents, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if image is None:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Invalid image format"}
+            )
     
     # Выполняем парсинг через сервис
     blocks, arrows, swimlanes = service.parse_diagram(image)
     
-    return service.convert_to_json(blocks, arrows, swimlanes)
-
-
-@app.post("/parse-bpmn-graph")
-async def parse_bpmn_graph(
-    body: dict = Body(...),
-    format: str = Query(
-        "html",
-        description="Формат ответа: html — как print с отступами, text — plain text, json — JSON",
-    ),
-):
-    """
-    Принимает JSON с BPMN графом и возвращает текстовое описание алгоритма действий.
-
-    Args:
-        body: JSON с полями nodes, edges и опционально actors
-        format: html — как print (сохраняет отступы и переносы), text — plain text, json — JSON
-
-    Returns:
-        Текст, HTML или JSON в зависимости от format
-    """
-    try:
-        text = bpmn_graph_to_text(body)
-        if format == "json":
-            return {"text": text}
-        if format == "html":
-            html = f"""<!DOCTYPE html>
+    json_result = service.convert_to_json(blocks, arrows, swimlanes)
+    
+    if output == "html":
+        # Конвертируем JSON в читаемый текст
+        text = bpmn_graph_to_text(json_result)
+        html = f"""<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>BPMN Result</title></head>
+<head><meta charset="utf-8"><title>Diagram Parser Result</title></head>
 <body><pre style="white-space: pre-wrap; font-family: monospace; margin: 1em;">{_text_to_html(text)}</pre></body>
 </html>"""
-            return HTMLResponse(html)
-        return PlainTextResponse(text, media_type="text/plain; charset=utf-8")
-    except (ValueError, TypeError) as e:
-        return JSONResponse(
-            status_code=400,
-            content={"error": str(e)}
-        )
+        return HTMLResponse(html)
+    
+    return json_result
 
 
 @app.get("/health")

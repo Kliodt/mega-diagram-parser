@@ -6,3 +6,4 @@ numpy==1.26.3
 pytesseract==0.3.10
 ultralytics==8.1.11
 torch==2.1.2
+cairosvg==2.7.1
